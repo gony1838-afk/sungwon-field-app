@@ -417,6 +417,10 @@ td {
   font-size: 22px;
 }
 
+.print-sheets {
+  display: none;
+}
+
 @media (max-width: 960px) {
   .app-shell {
     grid-template-columns: 1fr;
@@ -470,6 +474,11 @@ td {
 }
 
 @media print {
+  @page {
+    size: A4 landscape;
+    margin: 8mm;
+  }
+
   body {
     background: #fff;
     color: #000;
@@ -480,60 +489,110 @@ td {
   }
 
   .sidebar,
-  .toolbar .actions,
+  main > .toolbar,
+  main > .panel,
+  main > .summary,
   .no-print {
     display: none !important;
+  }
+
+  .print-sheets {
+    display: block;
   }
 
   main {
     padding: 0;
   }
 
-  .toolbar,
-  .panel,
-  .metric,
-  .table-wrap {
-    border: 0;
-    box-shadow: none;
-    border-radius: 0;
+  .print-sheet {
+    page-break-after: always;
+    color: #000;
   }
 
-  .toolbar {
-    position: static;
-    padding: 0 0 8px;
+  .print-sheet:last-child {
+    page-break-after: auto;
   }
 
-  .panel {
-    break-inside: avoid;
-    margin-top: 8px;
-    padding: 0;
+  .print-title-row {
+    display: grid;
+    grid-template-columns: 160px 1fr 220px;
+    align-items: stretch;
+    gap: 8px;
+    margin-bottom: 4px;
   }
 
-  .summary {
-    grid-template-columns: repeat(4, 1fr);
+  .print-logo {
+    border: 1px solid #000;
+    display: grid;
+    place-items: center;
+    font-weight: 900;
+    font-size: 13px;
+    min-height: 48px;
   }
 
-  .table-wrap {
-    overflow: visible;
+  .print-title-row h1 {
+    margin: 0;
+    text-align: center;
+    font-size: 28px;
+    letter-spacing: 0;
+    line-height: 48px;
   }
 
-  table {
+  .approval-table,
+  .print-table {
+    width: 100%;
     min-width: 0;
+    border-collapse: collapse;
+  }
+
+  .approval-table th,
+  .approval-table td,
+  .print-table th,
+  .print-table td {
+    border: 1px solid #000;
+    color: #000;
+    background: #fff;
+    text-align: center;
+    vertical-align: middle;
+    padding: 3px;
     font-size: 10px;
   }
 
-  th,
-  td {
-    padding: 4px;
-    font-size: 10px;
+  .approval-table td {
+    height: 34px;
   }
 
-  input,
-  select,
-  textarea,
-  .cell-input {
-    border: 0;
-    padding: 0;
-    min-height: 0;
+  .print-meta {
+    display: flex;
+    justify-content: space-between;
+    border: 1px solid #000;
+    border-bottom: 0;
+    padding: 4px 8px;
+    font-weight: 800;
+    font-size: 12px;
+  }
+
+  .print-table th {
+    font-weight: 900;
+  }
+
+  .print-table td {
+    height: 24px;
+  }
+
+  .daily-print-table th,
+  .daily-print-table td {
+    font-size: 9px;
+  }
+
+  .defect-print-table th,
+  .defect-print-table td {
+    font-size: 9px;
+  }
+
+  .print-subtotal td {
+    border-top: 3px solid #000;
+    border-bottom: 3px solid #000;
+    font-weight: 900;
   }
 }

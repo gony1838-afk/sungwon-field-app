@@ -340,6 +340,149 @@ function exportErp() {
   downloadCsv(`ERP_등록자료_${qs("#filterDate").value || today()}.csv`, rows);
 }
 
+function html(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+function displayShift(value) {
+  const text = String(value || "");
+  return text.includes("야") ? "야간" : "주간";
+}
+
+function finalRawDefect(row) {
+  return qcDefectQty(row) > 0 ? number(row.qcRawDefectQty) : number(row.rawDefectQty);
+}
+
+function finalRework(row) {
+  return qcDefectQty(row) > 0 ? number(row.qcReworkQty) : number(row.reworkQty);
+}
+
+function finalScrap(row) {
+  return qcDefectQty(row) > 0 ? number(row.qcScrapQty) : number(row.scrapQty);
+}
+
+function finalDefectTotal(row) {
+  return finalRawDefect(row) + finalRework(row) + finalScrap(row);
+}
+
+function blankRows(count, colSpan) {
+  return Array.from({ length: count }, () => `<tr>${Array.from({ length: colSpan }, () => "<td>&nbsp;</td>").join("")}</tr>`).join("");
+}
+
+function printSubtotal(label, rows) {
+  const production = rows.reduce((sum, row) => sum + number(row.productionQty), 0);
+  const raw = rows.reduce((sum, row) => sum + finalRawDefect(row), 0);
+  const rework = rows.reduce((sum, row) => sum + finalRework(row), 0);
+  const scrap = rows.reduce((sum, row) => sum + finalScrap(row), 0);
+  return `
+    <tr class="print-subtotal">
+      <td colspan="4">${label}</td>
+      <td>${production.toLocaleString()}</td>
+      <td>${raw.toLocaleString()}</td>
+      <td>${rework.toLocaleString()}</td>
+      <td>${scrap.toLocaleString()}</td>
+      <td colspan="2">불량률(PPM) :</td>
+      <td>${ppm(raw + rework + scrap, production).toLocaleString()}</td>
+    </tr>
+  `;
+}
+
+function renderPrintSheets() {
+  applyDailyCorrectionsToMemory();
+  const date = qs("#filterDate").value || today();
+  const dailyRows = flatDailyRows();
+  const defectRows = readDefectRowsFromTable();
+  const dayDefects = defectRows.filter(row => displayShift(row.shift) === "주간");
+  const nightDefects = defectRows.filter(row => displayShift(row.shift) === "야간");
+  const dailyBody = dailyRows.map(row => `
+    <tr>
+      <td>${html(row.line)}</td>
+      <td>${html(row.worker || row.writer)}</td>
+      <td>${html(row.partNo)}</td>
+      <td>${html(row.cycleTime)}</td>
+      <td>${html(row.workHours)}</td>
+      <td>${number(row.goodQty).toLocaleString()}</td>
+      <td>${number(row.rawDefectQty).toLocaleString()}</td>
+      <td>${number(row.reworkQty).toLocaleString()}</td>
+      <td>${number(row.scrapQty).toLocaleString()}</td>
+      <td>${html(row.achievementRate)}</td>
+      <td>${html(row.lotNo)}</td>
+      <td>${html(row.defectDetail)}</td>
+      <td>${html(row.downtime)}</td>
+      <td>${html(row.note)}</td>
+    </tr>
+  `).join("");
+  const defectBody = defectRows.map(row => `
+    <tr>
+      <td>${html(row.machine)}</td>
+      <td>${html(row.worker)}</td>
+      <td>${html(row.partNo)}</td>
+      <td>${number(row.productionQty).toLocaleString()}</td>
+      <td>${finalRawDefect(row).toLocaleString()}</td>
+      <td>${finalRework(row).toLocaleString()}</td>
+      <td>${finalScrap(row).toLocaleString()}</td>
+      <td>${html(row.defectDetail)}</td>
+      <td>${html(row.qcMemo)}</td>
+      <td>${displayShift(row.shift)}</td>
+      <td>${ppm(finalDefectTotal(row), number(row.productionQty)).toLocaleString()}</td>
+    </tr>
+  `).join("");
+
+  qs("#printSheets").innerHTML = `
+    <article class="print-sheet">
+      <div class="print-title-row">
+        <div class="print-logo">SUNG WON</div>
+        <h1>작 업 일 보</h1>
+        <table class="approval-table"><tr><th>작성</th><th>품질</th><th>승인</th></tr><tr><td></td><td></td><td></td></tr></table>
+      </div>
+      <div class="print-meta">생산일자 : ${html(date)} <span>※ 결근/지각/조퇴/연차 기록요망</span></div>
+      <table class="print-table daily-print-table">
+        <thead>
+          <tr>
+            <th rowspan="2">라인</th><th rowspan="2">성명</th><th rowspan="2">품번</th><th rowspan="2">C/T</th><th rowspan="2">작업시간</th><th rowspan="2">양품수량</th>
+            <th colspan="3">불량 구분</th><th rowspan="2">성취율</th><th rowspan="2">LOT NO.</th><th rowspan="2">불량내용</th><th rowspan="2">비가동 내역</th><th rowspan="2">비고</th>
+          </tr>
+          <tr><th>원소재</th><th>수정</th><th>폐기</th></tr>
+        </thead>
+        <tbody>${dailyBody}${blankRows(Math.max(0, 12 - dailyRows.length), 14)}</tbody>
+      </table>
+    </article>
+    <article class="print-sheet">
+      <div class="print-title-row">
+        <div class="print-logo">SUNG WON</div>
+        <h1>[ 불 량 일 보 ]</h1>
+        <table class="approval-table"><tr><th>작성</th><th>품질</th><th>검토</th><th>승인</th></tr><tr><td></td><td></td><td></td><td></td></tr></table>
+      </div>
+      <div class="print-meta">생산일자 : ${html(date)} <span>QC 수정 수량 기준</span></div>
+      <table class="print-table defect-print-table">
+        <thead>
+          <tr>
+            <th rowspan="2">작업호기</th><th rowspan="2">작업자</th><th rowspan="2">품번</th><th rowspan="2">생산수량</th>
+            <th colspan="3">QC 검토</th><th rowspan="2">불량 내역</th><th rowspan="2">QC 메모</th><th rowspan="2">주야</th><th rowspan="2">불량률(PPM)</th>
+          </tr>
+          <tr><th>원재료</th><th>수정</th><th>폐기</th></tr>
+        </thead>
+        <tbody>
+          ${defectBody}
+          ${blankRows(Math.max(0, 12 - defectRows.length), 11)}
+          ${printSubtotal("(주간) 소계", dayDefects)}
+          ${printSubtotal("(야간) 소계", nightDefects)}
+          ${printSubtotal("합계", defectRows)}
+        </tbody>
+      </table>
+    </article>
+  `;
+}
+
+function printAdminSheets() {
+  renderPrintSheets();
+  window.print();
+}
+
 function renderAll() {
   if (currentDefectReport) {
     qs("#qcName").value = currentDefectReport.qcName || qs("#qcName").value;
@@ -369,7 +512,7 @@ function init() {
   qs("#saveQcCorrections").addEventListener("click", saveQcCorrections);
   qs("#saveDailyCorrections").addEventListener("click", saveDailyCorrections);
   qs("#exportErp").addEventListener("click", exportErp);
-  qs("#printAdmin")?.addEventListener("click", () => window.print());
+  qs("#printAdmin")?.addEventListener("click", printAdminSheets);
   qs("#adminLogout").addEventListener("click", logoutAdmin);
   qsa("[data-auto-load]").forEach(input => input.addEventListener("change", loadData));
   document.addEventListener("input", event => {
