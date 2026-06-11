@@ -1,0 +1,13 @@
+{
+  "name": "sungwon-field-app",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Sung Won field production daily report and self-inspection web app",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
