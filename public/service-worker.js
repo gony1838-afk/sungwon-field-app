@@ -1,4 +1,4 @@
-const CACHE_NAME = "sungwon-field-app-v2";
+const CACHE_NAME = "sungwon-field-app-v5";
 const APP_SHELL = [
   "/",
   "/admin.html",
@@ -7,6 +7,7 @@ const APP_SHELL = [
   "/app.js",
   "/admin-login.js",
   "/admin.js",
+  "/masters.json",
   "/manifest.json",
   "/icon.svg"
 ];

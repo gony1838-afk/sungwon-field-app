@@ -119,6 +119,14 @@ function qcDefectQty(row) {
   return number(row.qcRawDefectQty) + number(row.qcReworkQty) + number(row.qcScrapQty);
 }
 
+function workerPpmDefectQty(row) {
+  return number(row.reworkQty) + number(row.scrapQty);
+}
+
+function qcPpmDefectQty(row) {
+  return number(row.qcReworkQty) + number(row.qcScrapQty);
+}
+
 function ppm(defects, production) {
   return production > 0 ? Math.round((defects / production) * 1_000_000) : 0;
 }
@@ -182,7 +190,7 @@ function renderSummary() {
   const production = rows.reduce((sum, row) => sum + number(row.productionQty), 0);
   const workerDefects = rows.reduce((sum, row) => sum + workerDefectQty(row), 0);
   const qcDefects = rows.reduce((sum, row) => sum + qcDefectQty(row), 0);
-  const finalDefects = qcDefects || workerDefects;
+  const finalDefects = qcDefects ? rows.reduce((sum, row) => sum + qcPpmDefectQty(row), 0) : rows.reduce((sum, row) => sum + workerPpmDefectQty(row), 0);
   qs("#summary").innerHTML = `
     <div class="metric"><span>작업일보</span><strong>${dailyItems.length}</strong></div>
     <div class="metric"><span>생산수량</span><strong>${production.toLocaleString()}</strong></div>
@@ -194,7 +202,7 @@ function renderSummary() {
 function renderDefects() {
   const rows = buildDefectRows();
   const body = rows.map((row, index) => {
-    const finalDefects = qcDefectQty(row) || workerDefectQty(row);
+    const finalDefects = qcDefectQty(row) ? qcPpmDefectQty(row) : workerPpmDefectQty(row);
     return `
       <tr data-defect-index="${index}">
         <td>${row.productionDate || ""}</td>
@@ -224,6 +232,8 @@ function renderSubtotal(label, rows) {
   const production = rows.reduce((sum, row) => sum + number(row.productionQty), 0);
   const worker = rows.reduce((sum, row) => sum + workerDefectQty(row), 0);
   const qc = rows.reduce((sum, row) => sum + qcDefectQty(row), 0);
+  const workerPpm = rows.reduce((sum, row) => sum + workerPpmDefectQty(row), 0);
+  const qcPpm = rows.reduce((sum, row) => sum + qcPpmDefectQty(row), 0);
   return `
     <tr class="subtotal-row">
       <td colspan="5">${label}</td>
@@ -231,7 +241,7 @@ function renderSubtotal(label, rows) {
       <td colspan="3">작업자 ${worker.toLocaleString()}</td>
       <td colspan="3">QC ${qc.toLocaleString()}</td>
       <td>불량률(PPM) :</td>
-      <td colspan="2">${ppm(qc || worker, production).toLocaleString()}</td>
+      <td colspan="2">${ppm(qc ? qcPpm : workerPpm, production).toLocaleString()}</td>
     </tr>
   `;
 }
@@ -366,7 +376,7 @@ function finalScrap(row) {
 }
 
 function finalDefectTotal(row) {
-  return finalRawDefect(row) + finalRework(row) + finalScrap(row);
+  return finalRework(row) + finalScrap(row);
 }
 
 function blankRows(count, colSpan) {

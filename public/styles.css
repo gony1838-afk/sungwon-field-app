@@ -225,6 +225,7 @@ main {
 .field {
   display: grid;
   gap: 5px;
+  position: relative;
 }
 
 label {
@@ -362,6 +363,56 @@ td {
   color: #c82333;
   font-size: 12px;
   font-weight: 900;
+}
+
+.match-list {
+  position: absolute;
+  top: calc(100% - 1px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  display: grid;
+  max-height: 260px;
+  overflow: auto;
+  background: #fff;
+  border: 1px solid #98a2b3;
+  border-radius: 6px;
+  box-shadow: 0 14px 26px rgba(16, 24, 40, .14);
+}
+
+.match-list:empty {
+  display: none;
+}
+
+.match-item {
+  width: 100%;
+  min-height: 0;
+  border: 0;
+  border-bottom: 1px solid #eaecf0;
+  border-radius: 0;
+  background: #fff;
+  color: var(--ink);
+  padding: 8px 10px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.match-item:hover,
+.match-item:focus {
+  background: #eef4ff;
+  outline: 0;
+}
+
+.match-item strong,
+.match-item span {
+  display: block;
+  line-height: 1.35;
+}
+
+.match-item span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .input-warning,
